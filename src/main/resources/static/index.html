@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat WebSocket</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        #chat-box { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
+    </style>
+</head>
+<body>
+<h1>Chat WebSocket</h1>
+<div id="chat-box"></div>
+<input type="text" id="message-input" placeholder="Digite sua mensagem..." />
+<button onclick="sendMessage()">Enviar</button>
+
+<script>
+    const socket = new SockJS('http://localhost:8080/ws-chat');
+    const stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, (frame) => {
+        console.log("Conectado: " + frame);
+
+        stompClient.subscribe('/topic/public', (message) => {
+            const chatMessage = JSON.parse(message.body);
+            document.getElementById('chat-box').innerHTML +=
+                `<p><strong>${chatMessage.sender}:</strong> ${chatMessage.content}</p>`;
+        });
+    });
+
+    function sendMessage() {
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value;
+
+        if (message.trim()) {
+            const chatMessage = {
+                sender: 'Usuário',
+                content: message
+            };
+
+            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+            messageInput.value = '';
+        }
+    }
+</script>
+</body>
+</html>
